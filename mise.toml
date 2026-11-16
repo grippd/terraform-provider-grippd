@@ -1,0 +1,12 @@
+[tools]
+go = "1.27.3"
+opentofu = "1.11.5"
+goreleaser = "2"
+
+[env]
+# Acceptance tests run against OpenTofu, not Terraform.
+TF_ACC_PROVIDER_NAMESPACE = "grippd"
+TF_ACC_PROVIDER_HOST = "registry.opentofu.org"
+
+[tasks.test]
+run = 'TF_ACC=1 TF_ACC_TERRAFORM_PATH="$(command -v tofu)" go test -count=1 ./...'
