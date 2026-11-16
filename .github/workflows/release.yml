@@ -1,5 +1,6 @@
 # Pushing a tag like v0.1.0 builds, signs and publishes a release the OpenTofu registry picks up.
 # Needs two repository secrets: GPG_PRIVATE_KEY (ASCII-armoured) and PASSPHRASE.
+# The passphrase reaches gpg on stdin (GoReleaser's signs.stdin), never on a command line.
 name: release
 on:
   push:
@@ -15,17 +16,15 @@ jobs:
           fetch-depth: 0
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
       - run: mise run test
-      - name: Import GPG key
-        id: gpg
-        uses: crazy-max/ghaction-import-gpg@e89d40939c28e39f97cf32126055eeae86ba74ec # v6
-        with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.PASSPHRASE }}
-      - uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6
-        with:
-          distribution: goreleaser
-          version: "~> v2"
-          args: release --clean
+      # Plain gpg and the GoReleaser mise pins: the org allows no third-party actions near the key.
+      - name: Import signing key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          echo "GPG_FINGERPRINT=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')" >> "$GITHUB_ENV"
+      - name: Release
+        run: mise exec -- goreleaser release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GPG_FINGERPRINT: ${{ steps.gpg.outputs.fingerprint }}
+          PASSPHRASE: ${{ secrets.PASSPHRASE }}

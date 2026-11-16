@@ -19,7 +19,7 @@ go build -o bin/ .     # then point a dev_overrides block at bin/ for registry.o
 ## Release
 
 Push a tag `vX.Y.Z`. The `release` workflow runs the tests, imports the signing key from the
-`GPG_PRIVATE_KEY` and `PASSPHRASE` secrets and runs GoReleaser, which publishes the zips,
+`GPG_PRIVATE_KEY` and `PASSPHRASE` secrets with plain `gpg` and runs GoReleaser (pinned in `mise.toml`), which publishes the zips,
 `SHA256SUMS`, its signature and the registry manifest. The OpenTofu registry picks up new tags
 of a registered provider on its own.
 
